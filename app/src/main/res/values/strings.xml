@@ -1,0 +1,35 @@
+<resources>
+    <string name="app_name">GboardHooker</string>
+    <string name="module_description">解开 Gboard 剪贴板的条数/有效期/字数限制，并支持按键自定义上下滑</string>
+
+    <string name="section_clipboard">剪贴板</string>
+    <string name="section_slide">按键滑动</string>
+    <string name="section_preset">预设</string>
+
+    <string name="feature_count_title">自定义剪贴板条数</string>
+    <string name="feature_count_summary">原版「最近」一栏只留 5 条，超出的直接看不到</string>
+    <string name="feature_ttl_title">自定义剪贴板有效期</string>
+    <string name="feature_ttl_summary">原版复制满 1 小时就从面板消失</string>
+    <string name="feature_chars_title">自定义剪贴板字数上限</string>
+    <string name="feature_chars_summary">原版单条超过 20000 字会被截断后再存</string>
+    <string name="feature_slide_up_title">自定义按键上滑</string>
+    <string name="feature_slide_up_summary">没指定的键保持原样（原版是长按第一候选）</string>
+    <string name="feature_slide_down_title">自定义按键下滑</string>
+    <string name="feature_slide_down_summary">原版没有下滑，可自定义或用长按第二候选</string>
+
+    <string name="label_max_items">最近保留条数</string>
+    <string name="label_ttl_minutes">有效期（分钟，0 = 永久）</string>
+    <string name="label_char_limit">单条字数上限</string>
+    <string name="label_up_map">上滑映射，如 q=1, w=2</string>
+    <string name="label_down_map">下滑映射，如 q=!, w=@</string>
+    <string name="label_slide_level">滑动灵敏度（1 灵敏 / 2 默认 / 3 迟钝）</string>
+
+    <string name="preset_stock">保持原版</string>
+    <string name="preset_light">够用就好</string>
+    <string name="preset_recommended">推荐</string>
+    <string name="preset_hoard">绝不丢失</string>
+
+    <string name="action_save">保存</string>
+    <string name="hint_saved">已保存，重启 Gboard（或重启输入法）后生效</string>
+    <string name="hint_lsposed">请在 LSPosed 管理器里为本模块勾选 Gboard 作用域，然后重启 Gboard</string>
+</resources>

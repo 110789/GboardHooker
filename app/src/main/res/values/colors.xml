@@ -1,0 +1,8 @@
+<resources>
+    <color name="brand_red">#E53935</color>
+    <color name="brand_red_dark">#B71C1C</color>
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_surface">#1B1B1B</color>
+    <color name="on_surface_muted">#6B6B6B</color>
+</resources>

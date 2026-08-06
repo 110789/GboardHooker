@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textColor="@color/on_surface"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/hintText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="12dp"
+            android:text="@string/hint_lsposed"
+            android:textColor="@color/on_surface_muted"
+            android:textSize="13sp" />
+
+        <!-- 预设 -->
+        <TextView
+            style="@style/SectionTitle"
+            android:text="@string/section_preset" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/presetStock"
+                style="@style/PresetButton"
+                android:text="@string/preset_stock" />
+
+            <Button
+                android:id="@+id/presetLight"
+                style="@style/PresetButton"
+                android:text="@string/preset_light" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/presetRecommended"
+                style="@style/PresetButton"
+                android:text="@string/preset_recommended" />
+
+            <Button
+                android:id="@+id/presetHoard"
+                style="@style/PresetButton"
+                android:text="@string/preset_hoard" />
+        </LinearLayout>
+
+        <!-- 剪贴板 -->
+        <TextView
+            style="@style/SectionTitle"
+            android:text="@string/section_clipboard" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchCount"
+            style="@style/FeatureSwitch"
+            android:text="@string/feature_count_title" />
+        <TextView style="@style/FeatureSummary" android:text="@string/feature_count_summary" />
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputBox"
+            android:hint="@string/label_max_items">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputMaxItems"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchTtl"
+            style="@style/FeatureSwitch"
+            android:text="@string/feature_ttl_title" />
+        <TextView style="@style/FeatureSummary" android:text="@string/feature_ttl_summary" />
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputBox"
+            android:hint="@string/label_ttl_minutes">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputTtlMinutes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchChars"
+            style="@style/FeatureSwitch"
+            android:text="@string/feature_chars_title" />
+        <TextView style="@style/FeatureSummary" android:text="@string/feature_chars_summary" />
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputBox"
+            android:hint="@string/label_char_limit">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputCharLimit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- 按键滑动 -->
+        <TextView
+            style="@style/SectionTitle"
+            android:text="@string/section_slide" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchSlideUp"
+            style="@style/FeatureSwitch"
+            android:text="@string/feature_slide_up_title" />
+        <TextView style="@style/FeatureSummary" android:text="@string/feature_slide_up_summary" />
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputBox"
+            android:hint="@string/label_up_map">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputUpMap"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchSlideDown"
+            style="@style/FeatureSwitch"
+            android:text="@string/feature_slide_down_title" />
+        <TextView style="@style/FeatureSummary" android:text="@string/feature_slide_down_summary" />
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputBox"
+            android:hint="@string/label_down_map">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputDownMap"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputBox"
+            android:hint="@string/label_slide_level">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputSlideLevel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="32dp"
+            android:backgroundTint="@color/brand_red"
+            android:text="@string/action_save"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
