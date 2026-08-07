@@ -126,24 +126,39 @@ internal object GboardDex {
     /** 从模块自己的 APK 里把 so 挖出来，落地到 Gboard 的缓存目录再加载。 */
     private fun extractAndLoad(ctx: HookCtx): Boolean = runCatching {
         val moduleApk = GboardDex::class.java.protectionDomain?.codeSource?.location?.path
-            ?: return@runCatching false
-        val context = ctx.appContextOrNull() ?: return@runCatching false
+        if (moduleApk.isNullOrEmpty()) {
+            ctx.log.w("拿不到模块自己的 APK 路径（codeSource 为空）")
+            return@runCatching false
+        }
+        ctx.log.d("模块 APK 路径：$moduleApk")
+
+        val context = ctx.appContextOrNull()
+        if (context == null) {
+            ctx.log.w("拿不到 Context，没法确定缓存目录")
+            return@runCatching false
+        }
         val dest = java.io.File(context.cacheDir, "gboardhooker_libdexkit.so")
 
         java.util.zip.ZipFile(moduleApk).use { zip ->
-            val entry = android.os.Build.SUPPORTED_ABIS
-                .mapNotNull { abi -> zip.getEntry("lib/$abi/libdexkit.so") }
-                .firstOrNull() ?: return@runCatching false
+            val abis = android.os.Build.SUPPORTED_ABIS.toList()
+            val entry = abis.mapNotNull { abi -> zip.getEntry("lib/$abi/libdexkit.so") }.firstOrNull()
+            if (entry == null) {
+                val allLibEntries = zip.entries().asSequence().map { it.name }.filter { it.startsWith("lib/") }.toList()
+                ctx.log.w("模块 APK 里没有 lib/<abi>/libdexkit.so，设备 ABI=$abis，包里实际的 lib 条目=$allLibEntries")
+                return@runCatching false
+            }
+            ctx.log.d("找到 ${entry.name}，大小 ${entry.size}，目标已有 ${dest.length()}")
 
             if (dest.length() != entry.size) {
                 zip.getInputStream(entry).use { input ->
                     dest.outputStream().use { output -> input.copyTo(output) }
                 }
+                ctx.log.d("已解压到 ${dest.absolutePath}")
             }
         }
         System.load(dest.absolutePath)
         true
-    }.onFailure { ctx.log.w("从模块 APK 解出 libdexkit.so 失败：${it.message}") }.getOrDefault(false)
+    }.onFailure { ctx.log.w("从模块 APK 解出 libdexkit.so 失败：${it.javaClass.simpleName}: ${it.message}") }.getOrDefault(false)
 
     /**
      * 开一次 DexKit 做一件事。
