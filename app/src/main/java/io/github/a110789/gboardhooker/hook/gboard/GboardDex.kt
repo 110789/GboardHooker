@@ -101,26 +101,49 @@ internal object GboardDex {
      * 好让模块能自定义加载路径。漏掉这一步的表现不是「找不到 so」，而是调用时报
      * `No implementation found for … nativeInitDexKit`，看起来像版本不匹配。
      *
-     * 在被注入的进程里还有第二层麻烦：`System.loadLibrary` 按**调用类的
-     * classloader** 找库，而这里的调用类由 LSPosed 的模块 classloader 加载，它未必
-     * 带着模块 APK 的原生库路径。所以直接加载失败时，再问一次 classloader 那个库的
-     * 绝对路径（`findLibrary` 是 protected，只能反射），拿到就按路径装。
+     * `System.loadLibrary` 按**调用类所在 classloader 关联的 native 库目录**找库——
+     * 这段代码虽然是模块自己的类，但运行在 Gboard 进程里，这个目录是不是正确指向
+     * 模块 APK 自带的 so，完全取决于 LSPosed 内部怎么构造这个 classloader，实测并不
+     * 可靠（`findLibrary` 反射兜底同理，问的是同一个 classloader）。
+     *
+     * 靠谱的办法是不猜路径：直接把模块自己 APK（一个 zip）里 `lib/<abi>/libdexkit.so`
+     * 这个条目读出来，写到 Gboard 自己能写的缓存目录，再用绝对路径 `System.load`——
+     * 这样无论 classloader 内部怎么实现都绕得过去。
      */
-    private val nativeReady: Boolean by lazy {
-        runCatching {
-            System.loadLibrary("dexkit")
-            return@lazy true
+    @Volatile
+    private var nativeLoaded = false
+
+    private fun ensureNative(ctx: HookCtx): Boolean {
+        if (nativeLoaded) return true
+        synchronized(this) {
+            if (nativeLoaded) return true
+            nativeLoaded = runCatching { System.loadLibrary("dexkit"); true }
+                .getOrElse { extractAndLoad(ctx) }
+            return nativeLoaded
         }
-        runCatching {
-            val loader = GboardDex::class.java.classLoader ?: return@runCatching false
-            val find = ClassLoader::class.java
-                .getDeclaredMethod("findLibrary", String::class.java)
-                .apply { isAccessible = true }
-            val path = find.invoke(loader, "dexkit") as? String ?: return@runCatching false
-            System.load(path)
-            true
-        }.getOrDefault(false)
     }
+
+    /** 从模块自己的 APK 里把 so 挖出来，落地到 Gboard 的缓存目录再加载。 */
+    private fun extractAndLoad(ctx: HookCtx): Boolean = runCatching {
+        val moduleApk = GboardDex::class.java.protectionDomain?.codeSource?.location?.path
+            ?: return@runCatching false
+        val context = ctx.appContextOrNull() ?: return@runCatching false
+        val dest = java.io.File(context.cacheDir, "gboardhooker_libdexkit.so")
+
+        java.util.zip.ZipFile(moduleApk).use { zip ->
+            val entry = android.os.Build.SUPPORTED_ABIS
+                .mapNotNull { abi -> zip.getEntry("lib/$abi/libdexkit.so") }
+                .firstOrNull() ?: return@runCatching false
+
+            if (dest.length() != entry.size) {
+                zip.getInputStream(entry).use { input ->
+                    dest.outputStream().use { output -> input.copyTo(output) }
+                }
+            }
+        }
+        System.load(dest.absolutePath)
+        true
+    }.onFailure { ctx.log.w("从模块 APK 解出 libdexkit.so 失败：${it.message}") }.getOrDefault(false)
 
     /**
      * 开一次 DexKit 做一件事。
@@ -134,7 +157,7 @@ internal object GboardDex {
             ctx.log.w("拿不到 APK 路径，跳过 $what")
             return null
         }
-        if (!nativeReady) {
+        if (!ensureNative(ctx)) {
             ctx.log.w("libdexkit.so 装不上，跳过 $what")
             return null
         }
