@@ -22,12 +22,18 @@
       MaterialSwitch 不带默认 style 会走到 AppCompat 的 SwitchCompat 逻辑，
       在测量阶段对一个不存在的文本调 StaticLayout，直接 NPE 崩溃。
       见 https://github.com/material-components/material-components-android/issues/2725
+
+      android:textAppearance 显式设成 @null——不设的话 Material3 那套默认
+      style 自带一个 textAppearance（字号很小），它的优先级比下面这几条
+      android:textSize/textColor 更高，会把它们盖掉，调 textSize 看着跟没调一样。
     -->
     <style name="FeatureSwitch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">12dp</item>
+        <item name="android:textAppearance">@null</item>
         <item name="android:textColor">@color/on_surface</item>
+        <item name="android:textSize">17sp</item>
         <item name="android:textStyle">bold</item>
     </style>
 

@@ -128,19 +128,17 @@ internal object GboardDex {
     private fun extractAndLoad(ctx: HookCtx): Boolean = runCatching {
         val context = ctx.appContextOrNull()
         if (context == null) {
-            ctx.log.w("拿不到 Context，没法查模块自己的 APK 路径")
+            ctx.log.w("拿不到 Context，没法确定缓存目录")
             return@runCatching false
         }
 
-        // protectionDomain.codeSource 这条路子在 LSPosed 这边不可靠——它加载模块类的
-        // classloader 不保证带着这个字段。改用更稳的办法：模块本身是个独立安装的
-        // App，直接问 Gboard 的 PackageManager「模块这个包装在哪」，系统级查询，
-        // 不依赖 classloader 内部怎么实现。
-        val moduleApk = runCatching {
-            context.packageManager.getApplicationInfo(HookEntry.MODULE_PACKAGE, 0).sourceDir
-        }.getOrNull()
+        // 一开始想用 Gboard 的 PackageManager 反查模块自己装在哪，结果撞上了
+        // Android 11+ 的包可见性限制——Gboard 的 manifest 没声明要查询本模块，
+        // 系统直接假装它不存在。改用 LSPosed 在 Zygote 阶段主动喂过来的路径
+        // （见 HookEntry.initZygote），完全不经过 PackageManager，不受这个限制。
+        val moduleApk = HookEntry.modulePath
         if (moduleApk.isNullOrEmpty()) {
-            ctx.log.w("PackageManager 查不到模块自己（${HookEntry.MODULE_PACKAGE}）的 APK 路径")
+            ctx.log.w("HookEntry.modulePath 是空的，initZygote 好像没跑到")
             return@runCatching false
         }
         ctx.log.d("模块 APK 路径：$moduleApk")

@@ -3,6 +3,7 @@ package io.github.a110789.gboardhooker.hook
 import android.app.Application
 import android.content.Context
 import de.robv.android.xposed.IXposedHookLoadPackage
+import de.robv.android.xposed.IXposedHookZygoteInit
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -21,8 +22,19 @@ import io.github.a110789.gboardhooker.hook.gboard.GboardModule
  * `Application` 对象都还没创建。凡是需要 Context 的地方（`SharedPreferences`、
  * `cacheDir`、`PackageManager`）在这个时间点统统拿不到。`Application.attach()` 是
  * 框架里第一个明确保证「Context 已经可用」的时间点，参数里直接带着，不用再猜。
+ *
+ * 顺带实现 [IXposedHookZygoteInit]：LSPosed 在 Zygote 阶段（比任何 App 进程都早）
+ * 就会主动把模块自己的 APK 路径喂过来，存在 [modulePath] 里备用——
+ * [io.github.a110789.gboardhooker.hook.gboard.GboardDex] 要解压模块自带的
+ * `libdexkit.so` 时原本想用 Gboard 的 `PackageManager` 反查模块路径，结果撞上了
+ * Android 11+ 的包可见性限制（Gboard 的 manifest 没声明要查询本模块，系统直接
+ * 当作查不到），这里现成拿到的路径不经过 `PackageManager`，天然绕开这个限制。
  */
-class HookEntry : IXposedHookLoadPackage {
+class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
+
+    override fun initZygote(startupParam: IXposedHookZygoteInit.StartupParam) {
+        modulePath = startupParam.modulePath
+    }
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
         if (lpparam.packageName != GBOARD_PACKAGE) return
@@ -64,5 +76,14 @@ class HookEntry : IXposedHookLoadPackage {
          * 反射取反而多一层可能失败的操作。
          */
         const val MODULE_PACKAGE = "io.github.a110789.gboardhooker"
+
+        /**
+         * 模块自己的 APK 路径，由 [initZygote] 在任何 App 进程起来之前填好。
+         * 早于任何 hook 都会先跑一次 Zygote 阶段，所以理论上到 [handleLoadPackage]
+         * 触发时这里已经有值——保险起见调用方仍按 nullable 处理。
+         */
+        @Volatile
+        var modulePath: String? = null
+            private set
     }
 }
