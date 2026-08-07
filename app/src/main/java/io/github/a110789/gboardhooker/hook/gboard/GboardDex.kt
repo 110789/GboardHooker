@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
 import io.github.a110789.gboardhooker.hook.HookCtx
+import io.github.a110789.gboardhooker.hook.HookEntry
 import org.luckypray.dexkit.DexKitBridge
 import java.lang.reflect.Method
 
@@ -125,18 +126,25 @@ internal object GboardDex {
 
     /** 从模块自己的 APK 里把 so 挖出来，落地到 Gboard 的缓存目录再加载。 */
     private fun extractAndLoad(ctx: HookCtx): Boolean = runCatching {
-        val moduleApk = GboardDex::class.java.protectionDomain?.codeSource?.location?.path
+        val context = ctx.appContextOrNull()
+        if (context == null) {
+            ctx.log.w("拿不到 Context，没法查模块自己的 APK 路径")
+            return@runCatching false
+        }
+
+        // protectionDomain.codeSource 这条路子在 LSPosed 这边不可靠——它加载模块类的
+        // classloader 不保证带着这个字段。改用更稳的办法：模块本身是个独立安装的
+        // App，直接问 Gboard 的 PackageManager「模块这个包装在哪」，系统级查询，
+        // 不依赖 classloader 内部怎么实现。
+        val moduleApk = runCatching {
+            context.packageManager.getApplicationInfo(HookEntry.MODULE_PACKAGE, 0).sourceDir
+        }.getOrNull()
         if (moduleApk.isNullOrEmpty()) {
-            ctx.log.w("拿不到模块自己的 APK 路径（codeSource 为空）")
+            ctx.log.w("PackageManager 查不到模块自己（${HookEntry.MODULE_PACKAGE}）的 APK 路径")
             return@runCatching false
         }
         ctx.log.d("模块 APK 路径：$moduleApk")
 
-        val context = ctx.appContextOrNull()
-        if (context == null) {
-            ctx.log.w("拿不到 Context，没法确定缓存目录")
-            return@runCatching false
-        }
         val dest = java.io.File(context.cacheDir, "gboardhooker_libdexkit.so")
 
         java.util.zip.ZipFile(moduleApk).use { zip ->
