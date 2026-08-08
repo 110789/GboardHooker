@@ -1,6 +1,14 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.GboardHooker" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!--
+      parent 换成完整的 Material3 主题（不是 MaterialComponents）——
+      MaterialSwitch 用的是 Widget.Material3.CompoundButton.MaterialSwitch 样式，
+      它「关闭」状态的颜色引用的是一批 Material3 专属属性（colorOutline、
+      colorSurfaceContainerHighest 等）。MaterialComponents 主题里没有这些属性，
+      系统找不到对应颜色时会退化成刺眼的品红——不是真的关闭状态，只是颜色没找到。
+    -->
+    <style name="Theme.GboardHooker" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/brand_red</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
         <item name="colorPrimaryDark">@color/brand_red_dark</item>
         <item name="colorAccent">@color/brand_red</item>
         <item name="android:windowBackground">@color/background</item>
