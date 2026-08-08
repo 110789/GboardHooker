@@ -52,10 +52,6 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
                         }
                         val ctx = HookCtx(lpparam, context)
                         runCatching {
-                            if (!GboardModule.isCompatible(ctx)) {
-                                ctx.log.w("跳过：不满足兼容性条件（进程=${ctx.processName}）")
-                                return@runCatching
-                            }
                             GboardModule.install(ctx)
                         }.onFailure { ctx.log.e("Gboard hook 初始化失败", it) }
                     }
@@ -87,3 +83,4 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
             private set
     }
 }
+

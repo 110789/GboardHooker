@@ -49,6 +49,4 @@ internal class HookCtx(private val lpparam: XC_LoadPackage.LoadPackageParam, pri
     fun isEnabled(featureKey: String, default: Boolean): Boolean = prefs.isEnabled(featureKey, default)
 
     fun int(key: String, default: Int): Int = prefs.int(key, default)
-
-    fun string(key: String): String? = prefs.string(key, "").ifBlank { null }
 }

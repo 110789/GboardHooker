@@ -1,22 +1,15 @@
 package io.github.a110789.gboardhooker.hook
 
-import de.robv.android.xposed.XposedBridge
-
 /**
- * 统一的日志出口。
+ * 日志出口——调用方不用改，这里直接空实现。
  *
- * 原框架的 `scope.log` 大概率也是包一层 [XposedBridge.log]，这里独立模块里
- * 直接自己写一个最小实现：所有日志都带 `[GboardHooker]` 前缀，方便在
- * LSPosed 管理器的日志页里用关键字过滤。
+ * 之前排查 hook 装不上、DexKit 装不上原生库那几轮问题全靠这些日志，但功能稳定
+ * 之后不再需要往 LSPosed 日志里写东西了，图省事没有把 `ctx.log.xxx(...)` 这些调用点
+ * 一个个删掉（改动面太大，容易改出问题），直接让 [d]/[i]/[w]/[e] 什么都不做。
  */
 internal object Log {
-    private const val TAG = "[GboardHooker]"
-
-    fun d(msg: String) = XposedBridge.log("$TAG D $msg")
-    fun i(msg: String) = XposedBridge.log("$TAG I $msg")
-    fun w(msg: String) = XposedBridge.log("$TAG W $msg")
-    fun e(msg: String, t: Throwable? = null) {
-        XposedBridge.log("$TAG E $msg")
-        if (t != null) XposedBridge.log(t)
-    }
+    fun d(msg: String) {}
+    fun i(msg: String) {}
+    fun w(msg: String) {}
+    fun e(msg: String, t: Throwable? = null) {}
 }

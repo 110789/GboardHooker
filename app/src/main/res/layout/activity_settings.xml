@@ -118,51 +118,6 @@
                 android:inputType="number" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- 按键滑动 -->
-        <TextView
-            style="@style/SectionTitle"
-            android:text="@string/section_slide" />
-
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/switchSlideUp"
-            style="@style/FeatureSwitch"
-            android:text="@string/feature_slide_up_title" />
-        <TextView style="@style/FeatureSummary" android:text="@string/feature_slide_up_summary" />
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/InputBox"
-            android:hint="@string/label_up_map">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputUpMap"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/switchSlideDown"
-            style="@style/FeatureSwitch"
-            android:text="@string/feature_slide_down_title" />
-        <TextView style="@style/FeatureSummary" android:text="@string/feature_slide_down_summary" />
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/InputBox"
-            android:hint="@string/label_down_map">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputDownMap"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/InputBox"
-            android:hint="@string/label_slide_level">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputSlideLevel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="number" />
-        </com.google.android.material.textfield.TextInputLayout>
-
         <Button
             android:id="@+id/saveButton"
             android:layout_width="match_parent"

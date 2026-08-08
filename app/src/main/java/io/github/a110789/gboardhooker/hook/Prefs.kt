@@ -16,15 +16,10 @@ object PrefKeys {
     const val FEATURE_COUNT = "feature_clip_count"
     const val FEATURE_TTL = "feature_clip_ttl"
     const val FEATURE_CHARS = "feature_clip_chars"
-    const val FEATURE_SLIDE_UP = "feature_slide_up"
-    const val FEATURE_SLIDE_DOWN = "feature_slide_down"
 
     const val MAX_ITEMS = "clip_max_items"
     const val TTL_MINUTES = "clip_ttl_minutes"
     const val CHAR_LIMIT = "clip_char_limit"
-    const val UP_MAP = "slide_up_map"
-    const val DOWN_MAP = "slide_down_map"
-    const val SLIDE_LEVEL = "slide_level"
 
     // 原版行为，功能没开时按它传 —— 与原始 GboardHooker.kt 完全一致。
     const val ORIGINAL_MAX_ITEMS = 5
@@ -34,9 +29,6 @@ object PrefKeys {
     const val DEFAULT_MAX_ITEMS = 50
     const val DEFAULT_TTL_MINUTES = 10_080 // 7 天
     const val DEFAULT_CHAR_LIMIT = 200_000
-    const val DEFAULT_UP_MAP = "q=1, w=2, e=3, r=4, t=5, y=6, u=7, i=8, o=9, p=0"
-    const val DEFAULT_DOWN_MAP = ""
-    const val DEFAULT_SLIDE_LEVEL = 2
 
     /** 约 10 年，够表达「基本等于永久又不至于溢出」。填 0 才是真的永久。 */
     const val MAX_TTL_MINUTES = 5_256_000
@@ -71,6 +63,4 @@ internal class Prefs(private val modulePackageName: String) {
         fresh().getBoolean(featureKey, default)
 
     fun int(key: String, default: Int): Int = fresh().getInt(key, default)
-
-    fun string(key: String, default: String): String = fresh().getString(key, default) ?: default
 }

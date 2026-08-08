@@ -4,16 +4,15 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import io.github.a110789.gboardhooker.hook.HookCtx
-import java.lang.reflect.Constructor
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
 /**
- * Gboard 里那些被 R8 重命名的类与成员，按**形状**在运行时认出来。
+ * Gboard 剪贴板里那些被 R8 重命名的类与成员，按**形状**在运行时认出来。
  *
  * 剪贴板整包都成了两三个字母的类名，写死名字等于每次 Gboard 更新都要重开一次
- * jadx。这里一个混淆后的名字都不写，靠三种线索：
+ * jadx。这里一个混淆后的名字都不写，靠两种线索：
  *
  * 1. **Flogger 的 TAG**。每个类的静态初始化里有
  *    `wbu.i("com/google/android/apps/inputmethod/libs/clipboard/ClipboardAdapter")`
@@ -21,14 +20,10 @@ import java.lang.reflect.Modifier
  *    它是 Google 内部日志系统的定位信息。用 DexKit 按它找类（见 [GboardDex]）。
  * 2. **签名唯一性**。找到类之后成员按参数与返回类型认：
  *    `(Context, String, String[], String)` 在那个工具类里只有一个。
- * 3. **未混淆的公开类**。键盘元数据那一层（`SoftKeyDef` / `ActionDef`）因为要被
- *    moshi 适配器按名字反射，名字原样保留 —— 那部分可以直接写。
  *
- * 每一组都是 `lazy`：只用滑动功能时不该因为剪贴板那几个类没扫到而整个失败。
+ * 每一组都是 `lazy`：真正用到才解析。
  */
 internal class GboardRefs private constructor(private val ctx: HookCtx) {
-
-    // --- 剪贴板 -------------------------------------------------------------
 
     /**
      * `ClipboardContentProviderUtils`：剪贴板所有读写的唯一出入口。
@@ -126,8 +121,6 @@ internal class GboardRefs private constructor(private val ctx: HookCtx) {
     /** 第三段（截图等）的段头。 */
     val sepOther: Any get() = separators[2]
 
-    // --- Flag ---------------------------------------------------------------
-
     /**
      * 按名字取一个 flag 并覆盖它的取值。
      *
@@ -161,115 +154,7 @@ internal class GboardRefs private constructor(private val ctx: HookCtx) {
             }
     }
 
-    // --- 键盘按键 -----------------------------------------------------------
-    // 这一层没混淆：moshi 适配器要按名字反射，类名原样保留。
-
-    val softKeyDef: Class<*> by lazy {
-        ctx.classOrNull(CLASS_SOFT_KEY_DEF) ?: error("找不到 $CLASS_SOFT_KEY_DEF")
-    }
-
-    val actionDef: Class<*> by lazy {
-        ctx.classOrNull(CLASS_ACTION_DEF) ?: error("找不到 $CLASS_ACTION_DEF")
-    }
-
-    /** `SoftKeyDef.actionDefs`：唯一 `ActionDef[]` 类型的字段。 */
-    val actionsField: Field by lazy {
-        softKeyDef.field("按键动作表") { it.type.isArray && it.type.componentType == actionDef }
-    }
-
-    /**
-     * `SoftKeyDef.labels`：键面上印的字，唯一的 `CharSequence[]`。
-     *
-     * 第二个通常就是右上角那个小小的长按提示（字母键上印的数字）。它是**显示值**，
-     * 未必等于按下去真正上屏的东西，所以只当兜底。
-     */
-    private val labelsField: Field by lazy {
-        softKeyDef.field("键面文字") {
-            it.type.isArray && it.type.componentType == CharSequence::class.java
-        }
-    }
-
-    fun labelsOf(key: Any): Array<*> = labelsField.get(key) as? Array<*> ?: emptyArray<Any?>()
-
-    /** `ActionDef.action`：唯一的枚举字段。它的类型就是那个动作枚举。 */
-    private val actionField: Field by lazy {
-        actionDef.field("动作类型") { Enum::class.java.isAssignableFrom(it.type) }
-    }
-
-    /** `ActionDef.keyDatas`：唯一「组件既非基本类型也非 String」的数组字段。 */
-    private val keyDatasField: Field by lazy {
-        actionDef.field("按键数据") {
-            it.type.isArray && !it.type.componentType.isPrimitive &&
-                it.type.componentType != String::class.java
-        }
-    }
-
-    /** 动作枚举（PRESS / LONG_PRESS / SLIDE_UP / …）。常量名没被混淆。 */
-    val actionEnum: Class<*> by lazy { actionField.type }
-
-    /** KeyData：一次按键要产生什么。 */
-    val keyData: Class<*> by lazy { keyDatasField.type.componentType }
-
-    /**
-     * `ActionDef` 的全参构造（动作 + 按键数据 + 一串开关）。
-     *
-     * 按**参数类型**认而不是数个数：另外两个构造分别收 `Parcel` 和 builder，
-     * 只有这个以「动作枚举 + KeyData 数组」打头。参数个数是会随版本增删的。
-     */
-    val actionDefCtor: Constructor<*> by lazy {
-        actionDef.declaredConstructors.firstOrNull {
-            it.parameterCount >= 2 && it.parameterTypes[0] == actionEnum &&
-                it.parameterTypes[1].isArray && it.parameterTypes[1].componentType == keyData
-        }?.apply { isAccessible = true } ?: error("找不到 ActionDef 的构造")
-    }
-
-    /** `SoftKeyDef` 的全参构造：唯一直接收 `ActionDef[]` 的那个。 */
-    val softKeyDefCtor: Constructor<*> by lazy {
-        softKeyDef.declaredConstructors.firstOrNull { ctor ->
-            ctor.parameterTypes.any { it.isArray && it.componentType == actionDef }
-        }?.apply { isAccessible = true } ?: error("找不到 SoftKeyDef 的构造")
-    }
-
-    /** `KeyData(keyCode, intention, data)`。 */
-    val keyDataCtor: Constructor<*> by lazy {
-        keyData.declaredConstructors.firstOrNull {
-            it.parameterCount == 3 && it.parameterTypes[0] == Int::class.javaPrimitiveType
-        }?.apply { isAccessible = true } ?: error("找不到 KeyData 的三参构造")
-    }
-
-    /** KeyData 的 `data`：唯一的 `Object` 字段，字母键上装的就是要上屏的字符。 */
-    private val keyDataValue: Field by lazy {
-        keyData.field("按键内容") { it.type == Any::class.java }
-    }
-
-    /** KeyData 的意图（DECODE / COMMIT）。构造新 KeyData 时照抄模板的。 */
-    private val keyDataIntent: Field by lazy {
-        keyData.field("按键意图") { Enum::class.java.isAssignableFrom(it.type) }
-    }
-
-    private val keyDataCode: Field by lazy {
-        keyData.field("按键码") { it.type == Int::class.javaPrimitiveType }
-    }
-
-    fun actionOf(action: Any): Any? = actionField.get(action)
-
-    fun keyDatasOf(action: Any): Array<*> = keyDatasField.get(action) as Array<*>
-
-    fun dataOf(data: Any): Any? = keyDataValue.get(data)
-
-    fun intentOf(data: Any): Any? = keyDataIntent.get(data)
-
-    fun codeOf(data: Any): Int = keyDataCode.getInt(data)
-
-    /** 按名字取动作枚举常量。常量名（`SLIDE_UP` 等）在 dex 里是原样的。 */
-    @Suppress("UNCHECKED_CAST")
-    fun action(name: String): Any? = runCatching {
-        java.lang.Enum.valueOf(actionEnum as Class<out Enum<*>>, name)
-    }.getOrNull()
-
-    // --- 选择器 -------------------------------------------------------------
-    // R8 会往类里加 synthetic 桥接，所以一律先滤掉再挑，而且只取第一个 ——
-    // 用 single 的话多出一个桥接就是一次崩溃，而它并不影响判断。
+    // -----------------------------------------------------------------------
 
     private fun Class<*>.pick(what: String, predicate: (Method) -> Boolean): Method =
         declaredMethods.firstOrNull { !it.isSynthetic && predicate(it) }
@@ -288,11 +173,6 @@ internal class GboardRefs private constructor(private val ctx: HookCtx) {
 
         /** 剪贴板字数上限的 flag 名，同时也是它所在类的锚点。 */
         const val FLAG_CHAR_LIMIT = "text_clip_item_char_limit"
-
-        private const val CLASS_SOFT_KEY_DEF =
-            "com.google.android.libraries.inputmethod.metadata.SoftKeyDef"
-        private const val CLASS_ACTION_DEF =
-            "com.google.android.libraries.inputmethod.metadata.ActionDef"
 
         @Volatile
         private var cached: GboardRefs? = null
