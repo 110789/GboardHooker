@@ -45,14 +45,25 @@ object PrefKeys {
 /**
  * 在被 hook 的 Gboard 进程里读取本模块设置界面写下的 [android.content.SharedPreferences]。
  *
- * LSPosed 会接管 [XSharedPreferences] 的读取路径，不需要模块自己把文件设成
- * world-readable（那是老式 Xposed 的做法，在现代 Android 上也做不到）。
+ * 前提是设置界面那边用 `Context.MODE_WORLD_READABLE` 打开的文件——LSPosed 只在这个
+ * mode 下才会把文件标记成这里能读的（之前偷懒写成 `MODE_PRIVATE`，界面上看着保存
+ * 成功了，这里其实永远只能读到默认值，调什么都跟没调一样，见
+ * [io.github.a110789.gboardhooker.ui.SettingsActivity.openModulePrefs] 的说明）。
+ *
  * 每次读取前都 `reload()`，因为设置随时可能在宿主 App 里被改掉，而这里的
  * hook（尤其是滑动那部分）是常驻的，不是只读一次。
  */
 internal class Prefs(private val modulePackageName: String) {
 
-    private val delegate by lazy { XSharedPreferences(modulePackageName, PrefKeys.FILE) }
+    private val delegate by lazy {
+        XSharedPreferences(modulePackageName, PrefKeys.FILE).also {
+            // 按官方 Wiki 建议在这里检查一次可读性——权限不对时静默掉不如
+            // 打一行日志，不然「设置了但没生效」这种问题下次还得从头排查。
+            if (!it.file.canRead()) {
+                Log.w("设置文件读不了（${it.file}），要么作用域没配好，要么写入那边没用 MODE_WORLD_READABLE")
+            }
+        }
+    }
 
     private fun fresh(): XSharedPreferences = delegate.apply { reload() }
 

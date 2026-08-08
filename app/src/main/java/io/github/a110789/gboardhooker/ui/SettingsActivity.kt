@@ -43,7 +43,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
-        prefs = getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE)
+        prefs = openModulePrefs()
 
         switchCount = findViewById(R.id.switchCount)
         switchTtl = findViewById(R.id.switchTtl)
@@ -66,6 +66,28 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<android.view.View>(R.id.presetHoard).setOnClickListener { applyPreset(PRESET_HOARD) }
 
         findViewById<android.view.View>(R.id.saveButton).setOnClickListener { saveToPrefs() }
+    }
+
+    /**
+     * 用 `MODE_WORLD_READABLE` 打开这份设置文件。
+     *
+     * 这一步不是可选项——LSPosed 只在模块用这个 mode 打开 `SharedPreferences` 时，
+     * 才会把它标记成 hook 那边（[de.robv.android.xposed.XSharedPreferences]）能读的
+     * （见 LSPosed Wiki「New XSharedPreferences」），前提是 manifest 里
+     * `xposedminversion` 至少是 93（本模块已经是）。之前图省事写的
+     * `MODE_PRIVATE`，界面上看着保存成功了，其实 hook 那边永远读不到真实值，
+     * 只能读到默认值——开关关掉、数值改了都不会有任何效果，因为根本没读进去。
+     *
+     * 普通 Android 上 `MODE_WORLD_READABLE` 从 API 24 起直接抛
+     * `SecurityException`，只有被 LSPosed 接管、且上面条件都满足时才放行，
+     * 所以这里必须 try/catch 兜底——不然脱离 LSPosed 环境（或者作用域还没配置好）
+     * 打开这个界面就会直接崩溃。
+     */
+    private fun openModulePrefs(): SharedPreferences = try {
+        @Suppress("DEPRECATION")
+        getSharedPreferences(PrefKeys.FILE, Context.MODE_WORLD_READABLE)
+    } catch (e: SecurityException) {
+        getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE)
     }
 
     private fun loadFromPrefs() {
